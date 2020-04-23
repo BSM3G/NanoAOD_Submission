@@ -61,7 +61,12 @@ def parse_name(dataset, options):
     ds_pt2 = dataset_split[2]  #second part of the name
     ds_pt3 = "MC" if "SIM" in dataset_split[3] else "data"  #third part of the name
     if ds_pt3 =="data":
-        ds_pt3+="_"+ds_pt2.split("-")[0][-1]
+        #ds_pt3+="_"+ds_pt2.split("-")[0][-1]
+        runeratmp = ds_pt2.split("-")[0]
+        runera = runeratmp.split("_")[0]
+        nanoaodver = ds_pt2.split("-")[1]
+        datenano = nanoaodver.split("_")[0]
+        ds_pt3m = runera+"_"+datenano # Get the full name of the run era.
     for generator in generators.keys():
         # subn() performs sub(), but returns tuple (new_string, number_of_subs_made)
         # using (?i) at the beginning of a regular expression makes it case insensitive
@@ -78,10 +83,13 @@ def parse_name(dataset, options):
     match = re.search('ext\d\d*',ds_pt2)
     #match = re.search('ext\d\d*',ds_pt2),options.cme
     #name = ds_pt1 + "_" + options.cme + "TeV_" + match.group() + "_" + options.postfix + generators[_generator]+"_"+ds_pt3
-    if match:
-        name = ds_pt1 + "_" + "TeV_" + match.group() + "_" + generators[_generator]+"_"+ds_pt3  
-    else:
-        name = ds_pt1 + "_" + "TeV_" + generators[_generator]+"_"+ds_pt3  #This may need to change for data.  Let's check.  
+    if "MC" in ds_pt3:
+        if match:
+            name = ds_pt1 + "_" + "TeV_" + match.group() + "_" + generators[_generator]+"_"+ds_pt3  
+        else:
+            name = ds_pt1 + "_" + "TeV_" + generators[_generator]+"_"+ds_pt3  #This may need to change for data.  Let's check.  
+    if "data" in ds_pt3:
+        name = ds_pt1 + "_" + ds_pt3m
     return name
 #__________end establish sample name__________
 
@@ -111,6 +119,7 @@ def getDatasetFileList(sample):
  output = getoutput(command)
  fileList = {}
  for line in output.split(os.linesep):
+     #print line.split()
      file,size=line.split()
      fileList['root://cmsxrootd.fnal.gov//'+file]=int(size)
      #fileList['root://cms-xrd-global.cern.ch/'+file]=int(size)
@@ -126,14 +135,14 @@ def getFilesfromFile(cfgFile, options):
         if line[0]=="#" or len(line.split())==0:
             continue
         sample=line.strip()  #Skip the guys who are commented.
-        
+        #print line # this are the lines in the sample list
         file_lists=bins(getDatasetFileList(sample),6400)  #size in bytes 3GB
         sampleList[parse_name(sample,options)]=file_lists
     return sampleList
 #__________end list of samples__________
 
 #__________setting config files and proper flags__________
-def makeExe(options,inputfiles,outputfile,sample):
+def makeExe(options,inputfiles,outputfile,sample,year):
     from string import Template
     exe="""
 #!/bin/bash -e
@@ -144,7 +153,7 @@ tar -xvzf exe.tar.gz
 ls
 isData=$ISDATA
 echo $isData
-if [ ! -z $isData ]
+if [ $isData == "true" ]
 then
     echo "switch data to true"
     sed -r -i -e 's/(isData\s+)(0|false)/isData true/' -e 's/(CalculatePUS[a-z]+\s+)(1|true)/CalculatePUSystematics false/' \
@@ -154,7 +163,7 @@ else
     sed -r -i -e 's/(isData\s+)(1|true)/isData false/' -e 's/(CalculatePUS[a-z]+\s+)(0|false)/CalculatePUSystematics true/' \
     $CONFIGDIR/Run_info.in
 fi
-./Analyzer -in $INPUTFILES -out $OUPUTFILE -C $CONFIGDIR $CONTOLLREGION
+./Analyzer -in $INPUTFILES -out $OUPUTFILE -y $YEAR -C $CONFIGDIR $CONTOLLREGION
 xrdcp -sf $_CONDOR_SCRATCH_DIR/$OUPUTFILE $OUTPUTFOLDER$SAMPLE/$OUPUTFILE
 """
 
@@ -167,7 +176,8 @@ xrdcp -sf $_CONDOR_SCRATCH_DIR/$OUPUTFILE $OUTPUTFOLDER$SAMPLE/$OUPUTFILE
     if options.CR:
         CR="-CR"
     #isdata= "RunII" in inputfiles[0] or "Tune" in inputfiles[0]
-    isdata= not "_Run20" in inputfiles[0]
+    #isdata= not "_Run20" in inputfiles[0]
+    isdata= "Run20" in inputfiles[0] # Added by Brenda FE 09-24-2019
     d = dict(
             CONFIGDIR=options.configdir,
             INPUTFILES=" ".join(inputfiles),
@@ -175,7 +185,8 @@ xrdcp -sf $_CONDOR_SCRATCH_DIR/$OUPUTFILE $OUTPUTFOLDER$SAMPLE/$OUPUTFILE
             OUTPUTFOLDER=options.outputFolder,
             SAMPLE=sample,
             CONTOLLREGION=CR,
-            ISDATA="" if isdata else "false",
+            ISDATA="true" if isdata else "false",
+            YEAR=year,
         )
     exe=Template(exe).safe_substitute(d)
     exeFile=open("run_"+outputfile.replace(".root","")+".sh","w+")
@@ -212,9 +223,22 @@ def main():
         
 
     ( options, args ) = parser.parse_args()
+
     if len( args ) != 1:
         parser.error( 'Exactly one CONFIG_FILE required!' )
     options.outputFolder=options.outputFolder.replace("REPLACEBYTAG",options.Tag)
+
+    # Brenda Fabela 08/27/2019
+    # print("Config file directory: " + args.configdir)
+
+    #cfgFile = args[ 0 ]
+    #print("Input sample list file: {0}").format(cfgFile)
+    #runyearidx = cfgFile.find("201")
+    #runyear = cfgFile[runyearidx:runyearidx+4]
+    #print("Run year index: {0}").format(runyearidx)
+    #print("Run year: {0}").format(runyear)
+    #exit()
+
     
     print("You may enter your grid password here. Do not enter anything to use the available proxy.")
     passphrase = getpass.getpass()
@@ -245,7 +269,22 @@ def main():
         shutil.rmtree(options.outputFolder.replace("root://cmseos.fnal.gov/","/eos/uscms/"))
     os.makedirs(options.outputFolder.replace("root://cmseos.fnal.gov/","/eos/uscms/"))
     
+
+    # Added for the newest version of the Analyzer.
     cfgFile = args[ 0 ]
+    #print("Input sample list file: {0}").format(cfgFile)
+    runyearidx = cfgFile.find("201")
+
+    if(runyearidx == -1):
+        log.error("The run year is not specified. Make sure it is included in your sample list filename (e.g. 2016MCSamples.txt)")
+        sys.exit(3)
+
+    runyear = cfgFile[runyearidx:runyearidx+4]
+    #print("Run year index: {0}").format(runyearidx)
+    #print("Run year: {0}").format(runyear)
+    #exit()
+
+
     sampleList=getFilesfromFile(cfgFile,options)
     
 
@@ -316,7 +355,7 @@ x509userproxy = $ENV(X509_USER_PROXY)
         f.close()
         
         for i,binned in enumerate(sampleList[sample]):
-            makeExe(options,binned,"%s_%d.root"%(sample,i),sample)
+            makeExe(options,binned,"%s_%d.root"%(sample,i),sample,runyear)
             condor_jdl+="arguments = %s \n"%("run_%s_%d.sh"%(sample,i))
             condor_jdl+="queue\n"
         condor_jdl+="\n"
