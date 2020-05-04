@@ -10,7 +10,19 @@ import ROOT  #s
 from condor_submit import checkAndRenewVomsProxy  #d
 from collections import OrderedDict  #d 
 from commands import getoutput  #d
-log = logging.getLogger( 'remote' )  #s
+# Create logger
+log = logging.getLogger('remote')
+# New: added by Brenda FE
+log.setLevel(logging.DEBUG)
+# New: create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# New: create formatter
+formatter = logging.Formatter('%(levelname)s - %(name)s (%(asctime)s): %(message)s','%H:%M:%S')
+# New: add formater to ch
+ch.setFormatter(formatter)
+# New: add ch to logger
+log.addHandler(ch)
 #__________end initial imports_______
 
 #__________store generators__________
@@ -251,7 +263,7 @@ def main():
 
     format = '%(levelname)s from %(name)s at %(asctime)s: %(message)s'
     date = '%F %H:%M:%S'
-    logging.basicConfig( level = logging._levelNames[ options.debug ], format = format, datefmt = date )
+    # logging.basicConfig( level = logging._levelNames[ options.debug ], format = format, datefmt = date )
     log.info("Welcome to the wonders of color!")
 
     try:
@@ -326,11 +338,11 @@ def main():
         os.chdir(os.path.join(options.Tag,sample))
         ## I know not the way we want to trigger stuff
         wrapper="""#!/bin/bash -e
-export SCRAM_ARCH=slc7_amd64_gcc630
+export SCRAM_ARCH=slc7_amd64_gcc700
 ls -lrth
 source /cvmfs/cms.cern.ch/cmsset_default.sh
-eval `scramv1 project CMSSW CMSSW_10_1_9`
-cd CMSSW_10_1_9
+eval `scramv1 project CMSSW CMSSW_10_2_18`
+cd CMSSW_10_2_18
 ls -lrth
 eval `scramv1 runtime -sh`
 cp ../$@ run.sh
