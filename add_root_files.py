@@ -1,6 +1,4 @@
 #!/bin/env python
-
-
 import logging
 # Create logger
 log = logging.getLogger("Merger")
@@ -67,9 +65,10 @@ def main():
                 break
     
     #options.output=os.path.join("/uscms/home/bfabelae/nobackup/CMSSW_10_1_9/src/NanoAOD_Submission_052019/Outputs/",options.output)
-    print options.output
+    log.info("Output directory: %s" % str(options.output))
+
     megeRootFiles(options)
-    
+
     final_merge(options)
 
     removetmpfiles(options)
@@ -100,6 +99,8 @@ def final_merge(options):
         os.makedirs(outdir)
     args=[]
     
+    log.info("Final output merge:")    
+    mergingdata = False
     for f in short_names:
         outputname=os.path.join(outdir,f+".root")   
         samplelist=glob.glob(outdir+"/tmp/*%s*.root"%f)
@@ -109,11 +110,17 @@ def final_merge(options):
         samplelist=filter(lambda x: (f+"_" in os.path.basename(x)[:len(f)+1]),samplelist)
         if len(samplelist)==1 and samplelist[0]==outputname:
             continue
+        if("allData" in f):
+        	mergingdata = True
         args.append([outputname, f, samplelist, options])
+
     if len(args)>0:
         #now merge all samples
         pool = multiprocessing.Pool(10)
-        pool.map_async(hadd, args)
+        if mergingdata == False:
+        	pool.map_async(hadd, args)
+        else: 
+        	print("\tMoving %s/tmp/allData.root to %s/allData.root" % (str(options.output), str(options.output)))
         while True:
             time.sleep(5)
             if not pool._cache: break
@@ -177,7 +184,7 @@ def megeRootFiles(options):
             log.err(err)
             print("------------------------------------")
             #log.debug(out)  
-    log.info("Done")
+    log.info("Done.")
 
 
 #method to add the Files at the end
@@ -220,7 +227,7 @@ def removetmpfiles(options):
     for file in glob.glob(options.output+"/tmp/*.root"):
         os.remove(file)
 
-    print "Temporary files at %s have been removed." % tmpFolder
+    log.info("Temporary files at %s have been removed." % tmpFolder)
 
 
 
