@@ -1,0 +1,27 @@
+#Single Muon Data Samples
+/SingleMuon/Run2017B-Nano25Oct2019-v1/NANOAOD 
+/SingleMuon/Run2017C-Nano25Oct2019-v1/NANOAOD 
+/SingleMuon/Run2017D-Nano25Oct2019-v1/NANOAOD 
+/SingleMuon/Run2017E-Nano25Oct2019-v1/NANOAOD 
+/SingleMuon/Run2017F-Nano25Oct2019-v1/NANOAOD
+
+#Tau Samples 
+#/Tau/Run2017B-Nano25Oct2019-v1/NANOAOD 
+#/Tau/Run2017C-Nano25Oct2019-v1/NANOAOD 
+#/Tau/Run2017D-Nano25Oct2019-v1/NANOAOD 
+#/Tau/Run2017E-Nano25Oct2019-v1/NANOAOD 
+#/Tau/Run2017F-Nano25Oct2019-v1/NANOAOD
+
+#MET Samples
+#/MET/Run2017B-Nano25Oct2019-v1/NANOAOD 
+#/MET/Run2017C-Nano25Oct2019-v1/NANOAOD 
+#/MET/Run2017D-Nano25Oct2019-v1/NANOAOD 
+#/MET/Run2017E-Nano25Oct2019-v1/NANOAOD 
+#/MET/Run2017F-Nano25Oct2019-v1/NANOAOD
+
+#Single Electron Samples
+#/SingleElectron/Run2017B-Nano25Oct2019-v1/NANOAOD
+#/SingleElectron/Run2017C-Nano25Oct2019-v1/NANOAOD
+#/SingleElectron/Run2017D-Nano25Oct2019-v1/NANOAOD
+#/SingleElectron/Run2017E-Nano25Oct2019-v1/NANOAOD
+#/SingleElectron/Run2017F-Nano25Oct2019-v1/NANOAOD
